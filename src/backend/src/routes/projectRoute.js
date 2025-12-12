@@ -6,23 +6,39 @@ import { protectedRoute, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Create project => role = 'project manager'
-router.post("/", authorize("user"), projectController.create);
+// TODO: Add authorization middleware ('manager' - 'member' - 'viewer')
 
-// Get all projects
-router.get("/", authorize("user"), projectController.getAllProject);
+// Get all projects for current user
+router.get("/", protectedRoute, projectController.getUserProjects);
 
-// Get projects by manager
+// Create project
+router.post("/", protectedRoute, projectController.create);
+
+// Get Project Members ('manager' only)
 router.get(
-  "/manager/:managerId",
-  authorize("user"),
-  projectController.getProjectByManager
+  "/:projectId/members",
+  protectedRoute,
+  projectController.getProjectMembers
 );
 
-// Get my projects
-router.get("/mine", authorize("user"), projectController.getMyProject);
+// Add Member ('manager' only)
+router.post("/:projectId/members", protectedRoute, projectController.addMember);
 
-// Delete
-router.delete("/:id", authorize("user"), projectController.deleteProject);
+// Remove Member ('manager' only)
+router.delete(
+  "/:projectId/members",
+  protectedRoute,
+  projectController.removeMember
+);
+
+// Change Member Role ('manager' only)
+router.put(
+  "/:projectId/members/role",
+  protectedRoute,
+  projectController.changeMemberRole
+);
+
+// Get project details
+router.get("/:projectId", protectedRoute, projectController.getProjectDetails);
 
 export default router;

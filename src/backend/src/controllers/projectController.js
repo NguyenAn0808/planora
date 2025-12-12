@@ -59,8 +59,6 @@ class ProjectController {
       const { projectId } = req.params;
       const { userId } = req.body;
 
-      const projects = await projectService.getProjectByUser(_id, role);
-
       await projectService.removeMemberFromProject(projectId, userId);
       res.status(204).send();
     } catch (error) {
@@ -68,59 +66,41 @@ class ProjectController {
     }
   }
 
-  async getProjectDetail(req, res) {
+  async changeMemberRole(req, res) {
     try {
-      const { id } = req.params;
-      const userId = req.user._id;
+      const { projectId } = req.params;
+      const { userId, newRole } = req.body;
 
-      const project = await projectService.getProjectById(id);
-      if (!project)
-        return res.status(404).json({ message: "Project not found" });
-
-      const isManager = project.manager._id.toString() === userId.toString();
-      const isMember = project.members.some(
-        (member) => member._id.toString() === userId.toString()
+      const updatedMember = await projectService.changeMemberRole(
+        projectId,
+        userId,
+        newRole
       );
-
-      if (!isManager && !isMember) {
-        return res.status(403).json({
-          message: "Access denied. You are not a member of this project.",
-        });
-      }
-
-      return res.status(200).json({
-        success: true,
-        data: project,
-      });
+      res.status(200).json(updatedMember);
     } catch (error) {
-      return res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error.message });
     }
   }
 
-  async deleteProject(req, res) {
+  async getProjectDetails(req, res) {
     try {
-      const { id } = req.params;
-      const project = await projectService.getProjectById(id);
-      if (!project) {
-        return res.status(404).json({ message: "Project not found" });
-      }
+      const { projectId } = req.params;
+      const userId = req.user.id;
 
-      // Validate manager
-      if (
-        req.user.role === "manager" &&
-        req.user.id !== project.manager.toString()
-      ) {
-        return res.status(403).json({
-          message: "You can only delete your own projects",
-        });
-      }
-
-      await projectService.deleteProject(id);
-      return res.status(200).json({
-        message: "Delete project successfully!",
-      });
+      const project = await projectService.getProjectDetails(userId, projectId);
+      res.status(200).json(project);
     } catch (error) {
-      return res.status(500).json({ message: error.message });
+      res.status(500).json({ message: error.message });
+    }
+  }
+
+  async getUserProjects(req, res) {
+    try {
+      const userId = req.user.id;
+      const projects = await projectService.getUserProjects(userId);
+      res.status(200).json(projects);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
   }
 }

@@ -8,61 +8,28 @@ class ProjectRepository {
     return `PROJ${timestamp}${random}`;
   }
 
-  async create(projectData) {
-    projectData.key = await this.generateKey();
-
-    return await Project.create(projectData);
+  async createProject(data) {
+    const key = await this.generateKey();
+    const project = new Project({ ...data, key });
+    return project.save();
   }
 
-  async findAll(filter = {}) {
-    return await Project.find(filter)
-      .populate("manager", "username email avatarURL")
-      .populate("members", "username email avatarURL")
-      .sort({ createdAt: -1 });
+  async findProjectById(id) {
+    return Project.findById(id).populate("manager", "username email");
   }
 
-  async findById(id) {
-    return await Project.findById(id)
-      .populate("manager", "username email avatarURL")
-      .populate("members", "username email avatarURL");
+  async findAllProjects() {
+    return Project.find().populate("manager", "username email");
   }
 
-  async findByManager(manager) {
-    return await Project.find({ manager: manager })
-      .populate("manager", "username email avatarURL")
-      .populate("members", "username email avatarURL")
-      .sort({ createdAt: -1 });
+  async findProjectsById(ids, session = null) {
+    return Project.find({ _id: { $in: ids } })
+      .populate("manager", "username email")
+      .session(session);
   }
 
-  async findByMember(userId) {
-    return await Project.find({ members: userId })
-      .populate("manager", "username email avatarURL")
-      .populate("members", "username email avatarURL")
-      .sort({ createdAt: -1 });
-  }
-
-  // Including all PM and team member
-  async findInvolved(userId) {
-    return await Project.find({
-      $or: [
-        { manager: userId },
-        { members: userId }, // Mongoose tự động check userId có nằm trong mảng members hay không
-      ],
-    })
-      .populate("manager", "username email avatarURL")
-      .populate("members", "username email avatarURL")
-      .sort({ createdAt: -1 });
-  }
-
-  async update(id, updateData) {
-    return await Project.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
-  }
-
-  async delete(id) {
-    return await Project.findByIdAndDelete(id);
+  async updateProject(id, data, session = null) {
+    return Project.findByIdAndUpdate(id, data, { new: true }).session(session);
   }
 }
 
