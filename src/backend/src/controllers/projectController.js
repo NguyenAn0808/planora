@@ -96,10 +96,13 @@ class ProjectController {
 
   async getUserProjects(req, res) {
     try {
-      const userId = req.user.id;
+      const userId = req.user._id || req.user.id;
+
       const projects = await projectService.getUserProjects(userId);
+
       res.status(200).json(projects);
     } catch (error) {
+      console.error("Error in getUserProjects:", error);
       res.status(500).json({ message: error.message });
     }
   }

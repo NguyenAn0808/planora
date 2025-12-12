@@ -9,7 +9,7 @@ const router = express.Router();
 // TODO: Add authorization middleware ('manager' - 'member' - 'viewer')
 
 // Get all projects for current user
-router.get("/", protectedRoute, projectController.getUserProjects);
+router.get("/mine", protectedRoute, projectController.getUserProjects);
 
 // Create project
 router.post("/", protectedRoute, projectController.create);

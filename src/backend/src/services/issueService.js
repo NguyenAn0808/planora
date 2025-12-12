@@ -7,7 +7,7 @@ class IssueService {
     if (!issue) throw new Error("Issue not found!");
 
     const projectId = issue.project._id || issue.project;
-    const project = await projectRepository.findById(projectId);
+    const project = await projectRepository.findProjectById(projectId);
     if (!project)
       throw new Error("Project associated with this issue not found!");
 
@@ -41,7 +41,7 @@ class IssueService {
     }
 
     // Validate project
-    const projectExists = await projectRepository.findById(project);
+    const projectExists = await projectRepository.findProjectById(project);
     if (!projectExists) {
       throw new Error("Project not found! Cannot create issue.");
     }

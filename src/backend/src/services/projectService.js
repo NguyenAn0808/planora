@@ -1,11 +1,25 @@
 import { projectRepository } from "../repositories/projectRepository.js";
 import { projectMembersRepository } from "../repositories/projectMembersRepository.js";
-
+import Issue from "../models/Issue.js";
 class ProjectService {
   async createProject(data, managerId) {
-    const projectData = { ...data, manager: managerId };
+    const { members, ...restData } = data;
+    const projectData = { ...restData, manager: managerId };
     const project = await projectRepository.createProject(projectData);
     await projectMembersRepository.addMember(project._id, managerId, "manager");
+    if (members && Array.isArray(members) && members.length > 0) {
+      await Promise.all(
+        members.map(async (member) => {
+          if (member.userId && member.userId !== managerId) {
+            await projectMembersRepository.addMember(
+              project._id,
+              member.userId,
+              member.role || "member"
+            );
+          }
+        })
+      );
+    }
     return project;
   }
 
@@ -90,7 +104,19 @@ class ProjectService {
       projectId
     );
 
-    return { ...project.toObject(), members };
+    const issues = await Issue.find({ project: projectId })
+      .populate("assignee", "username email avatar") // Populate để lấy avatar người được giao
+      .sort({ createdAt: -1 }); // Sắp xếp mới nhất lên đầu
+
+    return { ...project.toObject(), members, issues };
+  }
+
+  async getProjectById(projectId) {
+    const project = await projectRepository.findProjectById(projectId);
+    if (!project) {
+      throw new Error("Project not found");
+    }
+    return project;
   }
 
   async getUserProjects(userId) {
@@ -100,6 +126,9 @@ class ProjectService {
 
     const result = await Promise.all(
       projectMembers.map(async (pm) => {
+        if (!pm.project) {
+          return null;
+        }
         // Fetch members for each project
         const members = await projectMembersRepository.findMembersByProject(
           pm.project._id
@@ -108,7 +137,7 @@ class ProjectService {
       })
     );
 
-    return result;
+    return result.filter((item) => item !== null);
   }
 }
 
