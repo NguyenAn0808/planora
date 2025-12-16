@@ -287,6 +287,7 @@ function ProjectDetail() {
 
   const handleDeleteIssue = async (issue, e) => {
     e.stopPropagation();
+    
 
     //TODO: Implement delete issue logic
     console.log("Delete issue:", issue);
