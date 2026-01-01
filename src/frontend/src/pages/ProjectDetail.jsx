@@ -14,6 +14,13 @@ import {
   Trash2,
   Edit2,
   CheckCircle,
+  LayoutGrid,
+  List,
+  Target,
+  ChevronRight,
+  Play,
+  BarChart,
+  ArrowLeft,
 } from "lucide-react";
 import { projectService } from "../services/projectService";
 import { userService } from "../services/userService";
@@ -28,6 +35,7 @@ import CommentInput from "../components/CommentInput";
 import CommentText from "../components/CommentText";
 import EditIssue from "../components/EditIssue";
 import DeleteIssueConfirmation from "../components/DeleteIssueConfirmation";
+import CreateSprint from "../components/CreateSprint";
 import { showToast } from "../utils/toastUtils";
 
 function ProjectDetail() {
@@ -51,6 +59,12 @@ function ProjectDetail() {
   const [isEditIssueModalOpen, setIsEditIssueModalOpen] = useState(false);
   const [isDeleteIssueModalOpen, setIsDeleteIssueModalOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
+  const [activeTab, setActiveTab] = useState("issues"); // New state for tab navigation
+  const [expandedSprints, setExpandedSprints] = useState({ "sprint-3": true }); // Track which sprints are expanded
+  const [isBacklogExpanded, setIsBacklogExpanded] = useState(true); // Track if unassigned backlog is expanded
+  const [isCreateSprintModalOpen, setIsCreateSprintModalOpen] = useState(false);
+  const [openSprintMenu, setOpenSprintMenu] = useState(null);
+  const [sprintsData, setSprintsData] = useState([]);
 
   const {
     searchTerm,
@@ -384,6 +398,315 @@ function ProjectDetail() {
     return "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600";
   };
 
+  // Mock data for sprints - aligned with backend Sprint schema
+  const mockSprintsData = [
+    {
+      id: "sprint-4",
+      name: "Sprint 4",
+      goal: "Implement core features for user engagement",
+      status: "planning", // Backend enum: planning, active, completed, cancelled
+      start_date: "2025-01-13",
+      end_date: "2025-01-27",
+      tasksCompleted: 0,
+      tasksTotal: 5,
+      pointsCompleted: 0,
+      pointsTotal: 28,
+      progress: 0,
+      issues: [
+        {
+          id: "PLAN-011",
+          title: "Implement notification system",
+          priority: "high",
+          type: "Feature",
+          assignee: "MK",
+          dueDate: "2025-01-15",
+          status: "Jan 15",
+        },
+        {
+          id: "PLAN-012",
+          title: "Add export functionality",
+          priority: "medium",
+          type: "Feature",
+          assignee: "LT",
+          dueDate: "2025-01-18",
+          status: "Jan 18",
+        },
+        {
+          id: "PLAN-013",
+          title: "Optimize database queries",
+          priority: "high",
+          type: "Enhancement",
+          assignee: "AJ",
+          dueDate: "2025-01-16",
+          status: "Jan 16",
+        },
+        {
+          id: "PLAN-014",
+          title: "Add user permissions",
+          priority: "medium",
+          type: "Feature",
+          assignee: "CW",
+          dueDate: "2025-01-20",
+          status: "Jan 20",
+        },
+        {
+          id: "PLAN-015",
+          title: "Fix mobile responsiveness",
+          priority: "high",
+          type: "Bug",
+          assignee: "BS",
+          dueDate: "2025-01-14",
+          status: "Jan 14",
+        },
+      ],
+    },
+    {
+      id: "sprint-3",
+      name: "Sprint 3",
+      goal: "Complete authentication and UI improvements",
+      status: "active", // Backend enum: planning, active, completed, cancelled
+      start_date: "2024-12-30",
+      end_date: "2025-01-13",
+      tasksCompleted: 0,
+      tasksTotal: 4,
+      pointsCompleted: 0,
+      pointsTotal: 21,
+      progress: 0,
+      issues: [
+        {
+          id: "PLAN-001",
+          title: "Design new login page",
+          priority: "high",
+          type: "Feature",
+          assignee: "AJ",
+          dueDate: "2025-01-03",
+          status: "Due Soon",
+        },
+        {
+          id: "PLAN-002",
+          title: "API integration for user data",
+          priority: "medium",
+          type: "Feature",
+          assignee: "CW",
+          dueDate: "2025-01-07",
+          status: "Jan 7",
+        },
+        {
+          id: "PLAN-003",
+          title: "Fix navigation menu bug",
+          priority: "high",
+          type: "Bug",
+          assignee: "AJ",
+          dueDate: "2025-01-03",
+          status: "Due Soon",
+        },
+        {
+          id: "PLAN-004",
+          title: "Implement dark mode",
+          priority: "medium",
+          type: "Feature",
+          assignee: "BS",
+          dueDate: "2025-01-10",
+          status: "Jan 10",
+        },
+      ],
+    },
+    {
+      id: "sprint-2",
+      name: "Sprint 2",
+      goal: "Setup infrastructure and core features",
+      status: "completed", // Backend enum: planning, active, completed, cancelled
+      start_date: "2024-12-16",
+      end_date: "2024-12-30",
+      tasksCompleted: 3,
+      tasksTotal: 3,
+      pointsCompleted: 18,
+      pointsTotal: 18,
+      progress: 100,
+      issues: [
+        {
+          id: "PLAN-007",
+          title: "Setup CI/CD pipeline",
+          priority: "high",
+          type: "Feature",
+          assignee: "AJ",
+          dueDate: "2024-12-28",
+          status: "Completed",
+        },
+        {
+          id: "PLAN-008",
+          title: "Implement authentication",
+          priority: "high",
+          type: "Feature",
+          assignee: "CW",
+          dueDate: "2024-12-30",
+          status: "Completed",
+        },
+        {
+          id: "PLAN-009",
+          title: "Create project dashboard",
+          priority: "medium",
+          type: "Feature",
+          assignee: "BS",
+          dueDate: "2024-12-29",
+          status: "Completed",
+        },
+      ],
+    },
+    {
+      id: "sprint-1",
+      name: "Sprint 1",
+      goal: "Project foundation and architecture",
+      status: "completed", // Backend enum: planning, active, completed, cancelled
+      start_date: "2024-12-02",
+      end_date: "2024-12-16",
+      tasksCompleted: 2,
+      tasksTotal: 2,
+      pointsCompleted: 13,
+      pointsTotal: 13,
+      progress: 100,
+      issues: [
+        {
+          id: "PLAN-005",
+          title: "Project initialization",
+          priority: "high",
+          type: "Feature",
+          assignee: "AJ",
+          dueDate: "2024-12-15",
+          status: "Completed",
+        },
+        {
+          id: "PLAN-006",
+          title: "Database schema design",
+          priority: "high",
+          type: "Feature",
+          assignee: "MK",
+          dueDate: "2024-12-18",
+          status: "Completed",
+        },
+      ],
+    },
+  ];
+
+  // Initialize sprints data
+  useEffect(() => {
+    setSprintsData(mockSprintsData);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleSprint = (sprintId) => {
+    setExpandedSprints((prev) => ({
+      ...prev,
+      [sprintId]: !prev[sprintId],
+    }));
+  };
+
+  // Get issues that are not assigned to any sprint
+  const getUnassignedIssues = () => {
+    const assignedIssueIds = new Set();
+    
+    // Collect all issue IDs that are assigned to sprints
+    sprintsData.forEach(sprint => {
+      if (sprint.issues && Array.isArray(sprint.issues)) {
+        sprint.issues.forEach(issue => {
+          assignedIssueIds.add(issue._id || issue.id);
+        });
+      }
+    });
+    
+    mockSprintsData.forEach(sprint => {
+      if (sprint.issues && Array.isArray(sprint.issues)) {
+        sprint.issues.forEach(issue => {
+          assignedIssueIds.add(issue._id || issue.id);
+        });
+      }
+    });
+    
+    // Return issues not in any sprint
+    return issues.filter(issue => !assignedIssueIds.has(issue._id));
+  };
+
+  const handleStartSprint = (sprintId) => {
+    setSprintsData((prevSprints) =>
+      prevSprints.map((sprint) => {
+        if (sprint.id === sprintId) {
+          // Update status from 'planning' to 'active' and set start_date to today
+          return { 
+            ...sprint, 
+            status: "active",
+            start_date: new Date().toISOString().split('T')[0] // Update start date to today
+          };
+        }
+        // Set any other active sprint to completed
+        if (sprint.status === "active") {
+          return { 
+            ...sprint, 
+            status: "completed",
+            end_date: new Date().toISOString().split('T')[0] // Update end date to today
+          };
+        }
+        return sprint;
+      })
+    );
+    showToast("success", "Sprint started successfully!");
+    console.log(`Starting sprint: ${sprintId}`);
+    // TODO: Add API call here - POST /api/sprints/:id/start
+  };
+
+  const handleCompleteSprint = (sprintId) => {
+    setSprintsData((prevSprints) =>
+      prevSprints.map((sprint) =>
+        sprint.id === sprintId
+          ? { 
+              ...sprint, 
+              status: "completed", 
+              progress: 100,
+              end_date: new Date().toISOString().split('T')[0] // Update end date to today
+            }
+          : sprint
+      )
+    );
+    showToast("success", "Sprint completed successfully!");
+    console.log(`Completing sprint: ${sprintId}`);
+    // TODO: Add API call here - POST /api/sprints/:id/complete
+  };
+
+  const handleEditSprint = (sprint) => {
+    console.log("Edit sprint:", sprint);
+    showToast("info", "Edit sprint feature coming soon!");
+    // TODO: Implement edit sprint modal
+  };
+
+  const handleDeleteSprint = (sprint) => {
+    if (window.confirm(`Are you sure you want to delete ${sprint.name}?`)) {
+      setSprintsData((prevSprints) =>
+        prevSprints.filter((s) => s.id !== sprint.id)
+      );
+      showToast("success", "Sprint deleted successfully!");
+      console.log("Delete sprint:", sprint.id);
+      // TODO: Add API call to delete sprint
+    }
+  };
+
+  const handleViewSprintReport = (sprint) => {
+    console.log("View report for sprint:", sprint);
+    showToast("info", "Sprint report view coming soon!");
+    // TODO: Implement sprint report view
+  };
+
+  const handleCreateSprintSubmit = async (formData) => {
+    try {
+      // TODO: Implement API call to create sprint
+      console.log("Creating sprint:", formData);
+      alert("Sprint created successfully!");
+      // After successful creation, you would refresh the sprints data
+      setIsCreateSprintModalOpen(false);
+    } catch (error) {
+      console.error("Failed to create sprint:", error);
+      alert("Failed to create sprint");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -598,152 +921,666 @@ function ProjectDetail() {
 
       {/* Issues/Issues Section */}
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Issues ({issues.length})
-          </h3>
+        {/* Tab Navigation */}
+        <div className="bg-gray-100 dark:bg-slate-700 rounded-2xl p-1 inline-flex gap-1 mb-6">
           <button
-            onClick={() => setIsIssueModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition"
+            onClick={() => setActiveTab("issues")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+              activeTab === "issues"
+                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
           >
-            <Plus size={16} />
-            Create Issue
+            <LayoutGrid size={16} />
+            Issues
+          </button>
+          <button
+            onClick={() => setActiveTab("sprints")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+              activeTab === "sprints"
+                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <List size={16} />
+            Sprints
+          </button>
+          <button
+            onClick={() => setActiveTab("backlog")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+              activeTab === "backlog"
+                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <Target size={16} />
+            Backlog
           </button>
         </div>
 
-        {/* Filters and Search */}
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <TaskFilterBar
-            searchTerm={searchTerm}
-            filters={filters}
-            sortOrder={sortOrder}
-            openFilter={openFilter}
-            setSearchTerm={setSearchTerm}
-            handleFilterChange={handleFilterChange}
-            setOpenFilter={setOpenFilter}
-            getUniqueTypes={getUniqueTypes}
-            getUniquePriorities={getUniquePriorities}
-            getUniqueAssignees={getUniqueAssignees}
-            toggleSortOrder={toggleSortOrder}
-            getPriorityDisplay={getPriorityDisplay}
-          />
-        </div>
+        {/* Issues Tab Content */}
+        {activeTab === "issues" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Issues ({issues.length})
+              </h3>
+              <button
+                onClick={() => setIsIssueModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition"
+              >
+                <Plus size={16} />
+                Create Issue
+              </button>
+            </div>
 
-        {/* Kanban Board */}
-        <div className="overflow-x-auto">
-          <div className="grid grid-cols-4 gap-4 min-w-max pb-4">
-            {["To Do", "In Progress", "Review", "Done"].map((status) => {
-              const statusIssues = getIssuesByStatus(
-                status === "To Do"
-                  ? "todo"
-                  : status === "In Progress"
-                  ? "in_progress"
-                  : status === "Review"
-                  ? "in_review"
-                  : "done"
-              );
+            {/* Filters and Search */}
+            <div className="flex gap-3 mb-4 flex-wrap">
+              <TaskFilterBar
+                searchTerm={searchTerm}
+                filters={filters}
+                sortOrder={sortOrder}
+                openFilter={openFilter}
+                setSearchTerm={setSearchTerm}
+                handleFilterChange={handleFilterChange}
+                setOpenFilter={setOpenFilter}
+                getUniqueTypes={getUniqueTypes}
+                getUniquePriorities={getUniquePriorities}
+                getUniqueAssignees={getUniqueAssignees}
+                toggleSortOrder={toggleSortOrder}
+                getPriorityDisplay={getPriorityDisplay}
+              />
+            </div>
 
-              return (
-                <div key={status} className="w-64 flex flex-col gap-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-slate-900 dark:text-white text-sm">
-                      {status}
-                    </h4>
-                    <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full font-medium">
-                      {statusIssues.length}
-                    </span>
-                  </div>
-                  <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 min-h-[200px] space-y-2">
-                    {statusIssues.map((issue) => {
-                      const daysLeft = calculateDaysLeft(issue.due_date);
-                      const issueOver = daysLeft !== null && daysLeft < 0;
-                      console.log(issueOver);
-                      return (
-                        <div
-                          key={issue._id}
-                          onClick={() => handleIssueClick(issue)}
-                          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:shadow-md transition cursor-pointer"
-                        >
-                          <div className="flex items-start justify-between gap-2 mb-2">
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                              {issue.issueId}
-                            </p>
-                          </div>
-                          <p className="text-sm font-medium text-slate-900 dark:text-white mb-3 line-clamp-2">
-                            {issue.title}
-                          </p>
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={(e) => handleEditIssue(issue, e)}
-                              className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
-                              title="Edit issue"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={(e) => handleDeleteIssue(issue, e)}
-                              className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
-                              title="Delete issue"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded-md border ${getPriorityColor(
-                                issue.priority
-                              )}`}
-                            >
-                              {issue.priority}
-                            </span>
-                            <span
-                              className={`px-2 py-1 text-xs font-medium rounded-md border ${getTypeColor(
-                                issue.type
-                              )}`}
-                            >
-                              {issue.type}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
+            {/* Kanban Board */}
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-4 gap-4 min-w-max pb-4">
+                {["To Do", "In Progress", "Review", "Done"].map((status) => {
+                  const statusIssues = getIssuesByStatus(
+                    status === "To Do"
+                      ? "todo"
+                      : status === "In Progress"
+                      ? "in_progress"
+                      : status === "Review"
+                      ? "in_review"
+                      : "done"
+                  );
+
+                  return (
+                    <div key={status} className="w-64 flex flex-col gap-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium text-slate-900 dark:text-white text-sm">
+                          {status}
+                        </h4>
+                        <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full font-medium">
+                          {statusIssues.length}
+                        </span>
+                      </div>
+                      <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-3 min-h-[200px] space-y-2">
+                        {statusIssues.map((issue) => {
+                          const daysLeft = calculateDaysLeft(issue.due_date);
+                          const issueOver = daysLeft !== null && daysLeft < 0;
+                          return (
                             <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                              style={{
-                                backgroundColor: generateAvatarColor(
-                                  issue.assignee?.username || "Unknown"
-                                ),
-                              }}
+                              key={issue._id}
+                              onClick={() => handleIssueClick(issue)}
+                              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 hover:shadow-md transition cursor-pointer"
                             >
-                              {getAvatarInitial(
-                                issue.assignee?.username || "Unknown"
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <p className="text-sm font-medium text-slate-900 dark:text-white mb-3 line-clamp-2">
+                                  {issue.title}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={(e) => handleEditIssue(issue, e)}
+                                    className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition"
+                                    title="Edit issue"
+                                  >
+                                    <Edit2 size={14} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => handleDeleteIssue(issue, e)}
+                                    className="p-1 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition"
+                                    title="Delete issue"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-md border ${getPriorityColor(
+                                    issue.priority
+                                  )}`}
+                                >
+                                  {issue.priority}
+                                </span>
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-md border ${getTypeColor(
+                                    issue.type
+                                  )}`}
+                                >
+                                  {issue.type}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                  style={{
+                                    backgroundColor: generateAvatarColor(
+                                      issue.assignee?.username || "Unknown"
+                                    ),
+                                  }}
+                                >
+                                  {getAvatarInitial(
+                                    issue.assignee?.username || "Unknown"
+                                  )}
+                                </div>
+                                {issue.due_date && (
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded-md border ${getDueDateColor(
+                                      issue.due_date
+                                    )}`}
+                                  >
+                                    {getDueDateLabel(issue.due_date)}
+                                  </span>
+                                )}
+                                {issueOver && (
+                                  <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
+                                    Expired
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <button className="w-full py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
+                          <Plus size={16} className="mx-auto" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Sprints Tab Content */}
+        {activeTab === "sprints" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Sprint Management
+              </h3>
+              <button
+                onClick={() => setIsCreateSprintModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition"
+              >
+                <Plus size={16} />
+                Create Sprint
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {sprintsData.map((sprint) => (
+                <div
+                  key={sprint.id}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden"
+                >
+                  {/* Sprint Header */}
+                  <div className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
+                    <button
+                      onClick={() => toggleSprint(sprint.id)}
+                      className="flex items-center gap-3 flex-1"
+                    >
+                      <ChevronRight
+                        size={20}
+                        className={`text-slate-400 transition-transform ${
+                          expandedSprints[sprint.id] ? "rotate-90" : ""
+                        }`}
+                      />
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-slate-900 dark:text-white">
+                          {sprint.name}
+                        </h4>
+                        {sprint.status === "active" && (
+                          <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-lg">
+                            Active
+                          </span>
+                        )}
+                        {sprint.status === "planning" && (
+                          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium rounded-lg">
+                            Planning
+                          </span>
+                        )}
+                        {sprint.status === "completed" && (
+                          <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-lg">
+                            Completed
+                          </span>
+                        )}
+                        {sprint.status === "cancelled" && (
+                          <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-medium rounded-lg">
+                            Cancelled
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {sprint.tasksCompleted}/{sprint.tasksTotal} tasks •{" "}
+                        Start: {sprint.start_date}{" "}
+                        End: {sprint.end_date} •{" "}
+                        Goals: {sprint.goal}
+                      </p>
+                    </button>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 w-48">
+                        <div className="flex-1 bg-blue-100 dark:bg-blue-900/30 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-primary h-full transition-all"
+                            style={{ width: `${sprint.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-12 text-right">
+                          {sprint.progress}%
+                        </span>
+                      </div>
+
+                      {/* Sprint Action Buttons */}
+                      <div className="flex items-center gap-2">
+                        {sprint.status === "planning" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartSprint(sprint.id);
+                            }}
+                            className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-1.5"
+                          >
+                            <Play size={14} />
+                            Start Sprint
+                          </button>
+                        )}
+
+                        {sprint.status === "active" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCompleteSprint(sprint.id);
+                            }}
+                            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-1.5"
+                          >
+                            <CheckCircle size={14} />
+                            Complete Sprint
+                          </button>
+                        )}
+
+                        {sprint.status === "completed" && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleViewSprintReport(sprint);
+                            }}
+                            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition flex items-center gap-1.5"
+                          >
+                            <BarChart size={14} />
+                            View Report
+                          </button>
+                        )}
+
+                        {/* More Actions Menu */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenSprintMenu(sprint.id === openSprintMenu ? null : sprint.id);
+                            }}
+                            className="p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition"
+                          >
+                            <MoreVertical size={18} className="text-slate-600 dark:text-slate-400" />
+                          </button>
+
+                          {openSprintMenu === sprint.id && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-10"
+                                onClick={() => setOpenSprintMenu(null)}
+                              />
+                              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-20 min-w-[180px]">
+                                {sprint.status !== "completed" && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditSprint(sprint);
+                                        setOpenSprintMenu(null);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition rounded-t-lg"
+                                    >
+                                      <Edit2 size={14} />
+                                      Edit Sprint
+                                    </button>
+                                  </>
+                                )}
+
+                                {sprint.status === "completed" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleViewSprintReport(sprint);
+                                      setOpenSprintMenu(null);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition rounded-t-lg"
+                                  >
+                                    <BarChart size={14} />
+                                    View Report
+                                  </button>
+                                )}
+
+                                {sprint.status !== "active" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteSprint(sprint);
+                                      setOpenSprintMenu(null);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition rounded-b-lg border-t border-slate-200 dark:border-slate-700"
+                                  >
+                                    <Trash2 size={14} />
+                                    Delete Sprint
+                                  </button>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sprint Issues */}
+                  {expandedSprints[sprint.id] && sprint.issues.length > 0 && (
+                    <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                        {sprint.issues.map((issue) => (
+                          <div
+                            key={issue.id}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 hover:shadow-md transition"
+                          >
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                              {issue.id}
+                            </p>
+                            <h5 className="text-sm font-medium text-slate-900 dark:text-white mb-3">
+                              {issue.title}
+                            </h5>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${
+                                  issue.priority === "high"
+                                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
+                                    : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700"
+                                }`}
+                              >
+                                {issue.priority.charAt(0).toUpperCase() +
+                                  issue.priority.slice(1)}
+                              </span>
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${
+                                  issue.type === "Bug"
+                                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
+                                    : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700"
+                                }`}
+                              >
+                                {issue.type}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                style={{
+                                  backgroundColor: generateAvatarColor(
+                                    issue.assignee
+                                  ),
+                                }}
+                              >
+                                {issue.assignee}
+                              </div>
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${
+                                  issue.status === "Due Soon"
+                                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                                }`}
+                              >
+                                {issue.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Backlog Tab Content */}
+        {activeTab === "backlog" && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Product Backlog
+              </h3>
+              <button
+                onClick={() => setIsCreateSprintModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary text-white text-sm font-medium rounded-lg transition"
+              >
+                <Plus size={16} />
+                Create Sprint
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {/* Backlog Section */}
+              {getUnassignedIssues().length > 0 && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden">
+                  {/* Backlog Header */}
+                  <button
+                    onClick={() => setIsBacklogExpanded(!isBacklogExpanded)}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ChevronRight
+                        size={20}
+                        className={`text-slate-400 transition-transform ${
+                          isBacklogExpanded ? "rotate-90" : ""
+                        }`}
+                      />
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-slate-900 dark:text-white">
+                          Backlog
+                        </h4>
+                        <span className="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-medium rounded-lg">
+                          Not in Sprint
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {getUnassignedIssues().length} {getUnassignedIssues().length === 1 ? 'issue' : 'issues'}
+                      </p>
+                    </div>
+                  </button>
+
+                  {/* Unassigned Issues List */}
+                  {isBacklogExpanded && (
+                    <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                        {getUnassignedIssues().map((issue) => (
+                          <div
+                            key={issue._id}
+                            onClick={() => handleIssueClick(issue)}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 hover:shadow-md transition cursor-pointer"
+                          >
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                              {issue._id?.slice(-6) || 'N/A'}
+                            </p>
+                            <h5 className="text-sm font-medium text-slate-900 dark:text-white mb-3">
+                              {issue.title}
+                            </h5>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${getPriorityColor(issue.priority)}`}
+                              >
+                                {issue.priority?.charAt(0).toUpperCase() + issue.priority?.slice(1)}
+                              </span>
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${getTypeColor(issue.type)}`}
+                              >
+                                {issue.type}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                style={{
+                                  backgroundColor: generateAvatarColor(
+                                    issue.assignee?.username || "Unassigned"
+                                  ),
+                                }}
+                              >
+                                {getAvatarInitial(issue.assignee?.username || "U")}
+                              </div>
+                              {issue.due_date && (
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-lg border ${getDueDateColor(issue.due_date)}`}
+                                >
+                                  {getDueDateLabel(issue.due_date)}
+                                </span>
                               )}
                             </div>
-                            {issue.due_date && (
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-md border ${getDueDateColor(
-                                  issue.due_date
-                                )}`}
-                              >
-                                {getDueDateLabel(issue.due_date)}
-                              </span>
-                            )}
-                            {issueOver && (
-                              <span className="text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded">
-                                Expired
-                              </span>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                    <button className="w-full py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
-                      <Plus size={16} className="mx-auto" />
-                    </button>
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              )}
+
+              {/* Sprints Section */}
+              {mockSprintsData.map((sprint) => (
+                <div
+                  key={sprint.id}
+                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden"
+                >
+                  {/* Sprint Header */}
+                  <button
+                    onClick={() => toggleSprint(sprint.id)}
+                    className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/50 transition"
+                  >
+                    <div className="flex items-center gap-3">
+                      <ChevronRight
+                        size={20}
+                        className={`text-slate-400 transition-transform ${
+                          expandedSprints[sprint.id] ? "rotate-90" : ""
+                        }`}
+                      />
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-base font-semibold text-slate-900 dark:text-white">
+                          {sprint.name}
+                        </h4>
+                        {sprint.status === "current" && (
+                          <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-lg">
+                            Current
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        {sprint.tasksCompleted}/{sprint.tasksTotal} tasks •{" "}
+                        {sprint.pointsCompleted}/{sprint.pointsTotal} points
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3 w-48">
+                        <div className="flex-1 bg-blue-100 dark:bg-blue-900/30 rounded-full h-2 overflow-hidden">
+                          <div
+                            className="bg-primary h-full transition-all"
+                            style={{ width: `${sprint.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-400 w-12 text-right">
+                          {sprint.progress}%
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Sprint Issues */}
+                  {expandedSprints[sprint.id] && sprint.issues.length > 0 && (
+                    <div className="p-4 pt-0 border-t border-slate-200 dark:border-slate-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                        {sprint.issues.map((issue) => (
+                          <div
+                            key={issue.id}
+                            className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 hover:shadow-md transition"
+                          >
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                              {issue.id}
+                            </p>
+                            <h5 className="text-sm font-medium text-slate-900 dark:text-white mb-3">
+                              {issue.title}
+                            </h5>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${
+                                  issue.priority === "high"
+                                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
+                                    : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-700"
+                                }`}
+                              >
+                                {issue.priority.charAt(0).toUpperCase() +
+                                  issue.priority.slice(1)}
+                              </span>
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${
+                                  issue.type === "Bug"
+                                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700"
+                                    : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-700"
+                                }`}
+                              >
+                                {issue.type}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <div
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                style={{
+                                  backgroundColor: generateAvatarColor(
+                                    issue.assignee
+                                  ),
+                                }}
+                              >
+                                {issue.assignee}
+                              </div>
+                              <span
+                                className={`px-2 py-1 text-xs font-medium rounded-lg border ${
+                                  issue.status === "Due Soon"
+                                    ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700"
+                                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                                }`}
+                              >
+                                {issue.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Comment Section */}
@@ -1116,6 +1953,13 @@ function ProjectDetail() {
           setSelectedIssue(null);
         }}
         onConfirm={handleConfirmDelete}
+      />
+
+      {/* CREATE SPRINT MODAL */}
+      <CreateSprint
+        isOpen={isCreateSprintModalOpen}
+        onClose={() => setIsCreateSprintModalOpen(false)}
+        onCreateSprint={handleCreateSprintSubmit}
       />
     </div>
   );
