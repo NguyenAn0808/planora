@@ -12,6 +12,7 @@ import { protectedRoute } from "./middleware/authMiddleware.js";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import mongoose from "mongoose";
 
 dotenv.config();
 
@@ -24,15 +25,33 @@ app.use(cookieParser());
 app.use(
   cors({
     origin: [
-      process.env.CLIENT_URL, 
-      "http://localhost:5173", 
-      "http://localhost:5174"
+      process.env.CLIENT_URL,
+      "http://localhost:5173",
+      "http://localhost:5174",
     ],
     credentials: true,
   })
 );
 
 app.use(morgan("dev"));
+
+app.get("/health", (req, res) => {
+  const dbStatus =
+    mongoose.connection.readyState === 1 ? "healthy" : "unhealthy";
+
+  const status = {
+    server: "up",
+    database: dbStatus,
+    timestamp: new Date().toISOString(),
+    uptime: `${Math.floor(process.uptime())}s`,
+  };
+
+  if (dbStatus === "healthy") {
+    res.status(200).json(status);
+  } else {
+    res.status(503).json(status);
+  }
+});
 
 // public routes
 app.use("/api/auth", authRoute);
