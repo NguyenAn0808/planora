@@ -131,6 +131,101 @@ const StatCard = ({ icon, title, value, trend, isPositive }) => {
   );
 };
 
+const DonutChart = ({ data, total }) => {
+  // Calculate angles for each segment
+  let currentAngle = 0;
+  const segments = data.map((item) => {
+    const percentage = (item.value / total) * 100;
+    const angle = (item.value / total) * 360;
+    const segment = {
+      ...item,
+      percentage,
+      startAngle: currentAngle,
+      angle,
+    };
+    currentAngle += angle;
+    return segment;
+  });
+
+  // Create SVG path for donut segment
+  const createArc = (startAngle, angle, radius, innerRadius) => {
+    const startRad = ((startAngle - 90) * Math.PI) / 180;
+    const endRad = ((startAngle + angle - 90) * Math.PI) / 180;
+
+    const x1 = 100 + radius * Math.cos(startRad);
+    const y1 = 100 + radius * Math.sin(startRad);
+    const x2 = 100 + radius * Math.cos(endRad);
+    const y2 = 100 + radius * Math.sin(endRad);
+
+    const x3 = 100 + innerRadius * Math.cos(endRad);
+    const y3 = 100 + innerRadius * Math.sin(endRad);
+    const x4 = 100 + innerRadius * Math.cos(startRad);
+    const y4 = 100 + innerRadius * Math.sin(startRad);
+
+    const largeArc = angle > 180 ? 1 : 0;
+
+    return `
+            M ${x1} ${y1}
+            A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}
+            L ${x3} ${y3}
+            A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4}
+            Z
+        `;
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6">
+      <h3 className="text-xs font-medium text-slate-400 mb-6">
+        Status Overview
+      </h3>
+      <div className="flex items-center justify-center gap-8">
+        {/* Donut Chart */}
+        <div className="relative">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            {segments.map((segment, idx) => (
+              <path
+                key={idx}
+                d={createArc(segment.startAngle, segment.angle, 90, 65)}
+                fill={segment.color}
+                className="transition-opacity hover:opacity-80"
+              />
+            ))}
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-4xl font-semibold text-black dark:text-white">
+              {total}
+            </div>
+            <div className="text-xs text-slate-400">Total</div>
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="space-y-3">
+          {segments.map((segment, idx) => (
+            <div key={idx} className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-1">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: segment.color }}
+                />
+                <span className="text-s text-slate-300">{segment.label}</span>
+              </div>
+              <div className="flex items-center gap-2 ">
+                <span className="text-s font-medium text-slate-400">
+                  {segment.value}
+                </span>
+                <span className="text-s text-slate-400">
+                  ({segment.percentage.toFixed(1)}%)
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProjectCard = ({ project, onClick }) => {
   // Progress comes from backend
   const progress = project.progress || 0;
