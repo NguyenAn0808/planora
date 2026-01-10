@@ -6,7 +6,7 @@ import Session from "../models/Session.js";
 import OTP from "../models/OTP.js";
 import { sendOTPEmail, verifyOTP } from "../services/emailService.js";
 
-const ACCESS_TOKEN_TTL = "30m"; // normal: 15mins
+const ACCESS_TOKEN_TTL = 7 * 24 * 60 * 60 * 1000; // normal: 15mins
 const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000; // 14 days (milliseconds)
 
 export const signUp = async (req, res) => {
