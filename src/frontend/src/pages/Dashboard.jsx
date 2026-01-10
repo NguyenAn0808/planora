@@ -343,32 +343,51 @@ export default function Dashboard() {
     ...issues.Done,
   ];
 
-  const completedCount = issues.Done.length;
-  const bugCount = allIssues.filter(
-    (issue) => issue.type === "bug" && issue.status !== "done"
-  ).length;
   const highPriorityCount = allIssues.filter(
     (issue) => issue.priority === "high" && issue.status !== "done"
   ).length;
-  const uniqueProjects = new Set(
-    allIssues.map((issue) => issue.project?._id).filter(Boolean)
-  );
-  const projectCount = uniqueProjects.size;
+
+  // Count projects user is participating in
+  const projectCount = projects.length;
+
+  // Data for donut chart
+  const donutData = [
+    {
+      label: "Done",
+      value: issues.Done.length,
+      color: "#10b981", // emerald-500
+    },
+    {
+      label: "Review",
+      value: issues.Review.length,
+      color: "#6366f1", // indigo-500
+    },
+    {
+      label: "In Progress",
+      value: issues["In Progress"].length,
+      color: "#0ea5e9", // sky-500
+    },
+    {
+      label: "To Do",
+      value: issues["To Do"].length,
+      color: "#ccc", // amber-500
+    },
+  ];
 
   const statData = [
     {
-      icon: CheckCircle2,
-      title: "Tasks Completed",
-      value: completedCount,
-      trend: "Done status",
+      icon: Folder,
+      title: "Projects",
+      value: projectCount,
+      trend: "Participating",
       isPositive: true,
     },
     {
-      icon: AlertCircle,
-      title: "Bug Tasks",
-      value: bugCount,
-      trend: "Type: Bug",
-      isPositive: false,
+      icon: ChartNoAxesGantt,
+      title: "Active Sprints",
+      value: sprints.length,
+      trend: "Current sprints",
+      isPositive: true,
     },
     {
       icon: AlertCircle,
@@ -376,13 +395,6 @@ export default function Dashboard() {
       value: highPriorityCount,
       trend: "Urgent items",
       isPositive: false,
-    },
-    {
-      icon: Folder,
-      title: "Projects",
-      value: projectCount,
-      trend: "Participating",
-      isPositive: true,
     },
   ];
 
