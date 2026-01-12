@@ -99,7 +99,8 @@ const Sidebar = ({ isOpen, toggleSidebar, onOpenSettings }) => {
         {/* 2. Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6 custom-scrollbar">
           {/* Group: Navigation */}
-          <div>
+          {user?.role === "user" && (
+            <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
               Management
             </p>
@@ -109,26 +110,30 @@ const Sidebar = ({ isOpen, toggleSidebar, onOpenSettings }) => {
                 icon={LayoutDashboard}
                 label="Dashboard"
               />
-              {user?.role === "user" && (
-                <NavItem to="/favorites" icon={StarIcon} label="Favorite" />
-              )}
             </div>
           </div>
+          )}
+          
+          {/* Admin Only - User Management */}
+          {user?.role === "admin" && (
+            <div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
+                Management
+              </p>
+              <NavItem to="/users" icon={Users} label="Users" />
+            </div>
+          )}
 
           {/* Group: Private - Role-based menu items */}
-          <div>
+          {/* User Only - Regular Pages */}
+          {user?.role === "user" && (
+            <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
               Private
             </p>
             <div className="space-y-1">
-              {/* Admin Only - User Management */}
-              {user?.role === "admin" && (
-                <NavItem to="/users" icon={Users} label="Users" />
-              )}
-
-              {/* User Only - Regular Pages */}
-              {user?.role === "user" && (
                 <>
+                  <NavItem to="/favorites" icon={StarIcon} label="Favorite" />
                   <NavItem to="/projects" icon={Folder} label="Projects" />
                   <NavItem to="/issues" icon={CheckSquare} label="Issues" />
                   {/* <NavItem to="/favorites" icon={StarIcon} label="Favorites Projects" /> */}
@@ -137,9 +142,10 @@ const Sidebar = ({ isOpen, toggleSidebar, onOpenSettings }) => {
                   <NavItem to="/work_log" icon={Clock} label="Work Log" />
                   <NavItem to="/risks" icon={AlertTriangle} label="Risks" /> */}
                 </>
-              )}
+              
             </div>
           </div>
+          )}
 
           {/* Group: Collapsible (Favorites & Projects) */}
           {/* <div className="space-y-4">

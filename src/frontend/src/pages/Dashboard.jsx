@@ -437,7 +437,364 @@ export default function Dashboard() {
                 Overview of your tasks and projects
               </p>
             </div>
-          </div>
+
+            {/* Stats Cards and Donut Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {statData.map((stat, idx) => (
+                        <StatCard key={idx} {...stat} />
+                    ))}
+                </div>
+
+                {/* Donut Chart */}
+                <DonutChart data={donutData} total={allIssues.length} />
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl w-fit">
+                {tabs.map(({ id, label, icon: Icon }) => (
+                    <button
+                        key={id}
+                        onClick={() => setActiveTab(id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                            activeTab === id
+                                ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm"
+                                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                        }`}
+                    >
+                        <Icon size={16} />
+                        {label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Content */}
+            {activeTab === "kanban" && (
+                <div className="space-y-4">
+                    {/* Filters */}
+                    <div className="flex flex-col md:flex-row gap-3">
+                        <div className="flex-1 relative">
+                            <Search
+                                size={16}
+                                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Search issues..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        {/* Project Filter Dropdown */}
+                        <div className="relative" ref={projectDropdownRef}>
+                            <button
+                                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                                className="w-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                            >
+                                <FolderKanban size={16} />
+                                Project ({selectedProjects.length === 0 ? 'All' : selectedProjects.length})
+                                <ChevronDown size={14} className={`transition-transform ${isProjectDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isProjectDropdownOpen && (
+                                <div className="absolute top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-10 w-xs max-w-xs max-h-60 overflow-y-auto">
+                                    {projects.map((project) => (
+                                        <label key={project._id} className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedProjects.includes(project._id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedProjects([...selectedProjects, project._id]);
+                                                    } else {
+                                                        setSelectedProjects(selectedProjects.filter(id => id !== project._id));
+                                                    }
+                                                }}
+                                                className="rounded flex-shrink-0"
+                                            />
+                                            <span className="text-sm text-slate-900 dark:text-white truncate">{project.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Sprint Filter Dropdown */}
+                        <div className="relative" ref={sprintDropdownRef}>
+                            <button
+                                onClick={() => setIsSprintDropdownOpen(!isSprintDropdownOpen)}
+                                className="w-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                            >
+                                <ChartNoAxesGantt size={16} />
+                                Sprint ({selectedProjects.length === 0 ? 'All' : selectedProjects.length})
+                                <ChevronDown size={14} className={`transition-transform ${isSprintDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isSprintDropdownOpen && (
+                                <div className="absolute top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-10 w-xs max-w-xs max-h-60 overflow-y-auto">
+                                    {sprints.map((sprint) => (
+                                        <label key={sprint._id} className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedSprints.includes(sprint._id)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedSprints([...selectedSprints, sprint._id]);
+                                                    } else {
+                                                        setSelectedSprints(selectedSprints.filter(id => id !== sprint._id));
+                                                    }
+                                                }}
+                                                className="rounded flex-shrink-0"
+                                            />
+                                            <span className="text-sm text-slate-900 dark:text-white truncate">{sprint.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                            
+                    {/* Kanban Board */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* To Do Column */}
+                        <div
+                            className="bg-slate-200 dark:bg-slate-700 rounded-xl p-4 space-y-3 transition-colors"
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, "To Do")}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                    To Do
+                                    <span className="bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-xs text-slate-600 dark:text-slate-400">
+                                        {filteredIssues["To Do"].length}
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                {filteredIssues["To Do"].map((issue, idx) => {
+                                    const { key, project, ...issueProps } =
+                                        issue;
+                                    return (
+                                        <IssueCard
+                                            key={idx}
+                                            projectName={
+                                                project?.name ||
+                                                "Unknown Project"
+                                            }
+                                            {...issueProps}
+                                            onClick={() =>
+                                                handleShowIssueOverview(issue)
+                                            }
+                                            onDragStart={(e) =>
+                                                handleDragStart(
+                                                    e,
+                                                    issue,
+                                                    "To Do"
+                                                )
+                                            }
+                                            isDragging={
+                                                draggedIssue?.key === issue.key
+                                            }
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* In Progress Column */}
+                        <div
+                            className="bg-sky-100  dark:bg-blue-900 rounded-xl p-4 space-y-3 transition-colors"
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, "In Progress")}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                    In Progress
+                                    <span className="bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-xs text-slate-600 dark:text-slate-400">
+                                        {filteredIssues["In Progress"].length}
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                {filteredIssues["In Progress"].map(
+                                    (issue, idx) => {
+                                        const { key, project, ...issueProps } =
+                                            issue;
+                                        return (
+                                            <IssueCard
+                                                key={idx}
+                                                projectName={
+                                                    project?.name ||
+                                                    "Unknown Project"
+                                                }
+                                                {...issueProps}
+                                                onClick={() =>
+                                                    handleShowIssueOverview(
+                                                        issue
+                                                    )
+                                                }
+                                                onDragStart={(e) =>
+                                                    handleDragStart(
+                                                        e,
+                                                        issue,
+                                                        "In Progress"
+                                                    )
+                                                }
+                                                isDragging={
+                                                    draggedIssue?.key ===
+                                                    issue.key
+                                                }
+                                            />
+                                        );
+                                    }
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Review Column */}
+                        <div
+                            className="bg-indigo-100  dark:bg-indigo-800 rounded-xl p-4 space-y-3 transition-colors"
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, "Review")}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                    Review
+                                    <span className="bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-xs text-slate-600 dark:text-slate-400">
+                                        {filteredIssues["Review"].length}
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                {filteredIssues["Review"].map((issue, idx) => {
+                                    const { key, project, ...issueProps } =
+                                        issue;
+                                    return (
+                                        <IssueCard
+                                            key={idx}
+                                            projectName={
+                                                project?.name ||
+                                                "Unknown Project"
+                                            }
+                                            {...issueProps}
+                                            onClick={() =>
+                                                handleShowIssueOverview(issue)
+                                            }
+                                            onDragStart={(e) =>
+                                                handleDragStart(
+                                                    e,
+                                                    issue,
+                                                    "Review"
+                                                )
+                                            }
+                                            isDragging={
+                                                draggedIssue?.key === issue.key
+                                            }
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Done Column */}
+                        <div
+                            className="bg-emerald-100  dark:bg-emerald-800 rounded-xl p-4 space-y-3 transition-colors"
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, "Done")}
+                            onDragEnd={handleDragEnd}
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-medium text-slate-900 dark:text-white flex items-center gap-2">
+                                    Done
+                                    <span className="bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full text-xs text-slate-600 dark:text-slate-400">
+                                        {filteredIssues["Done"].length}
+                                    </span>
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                {filteredIssues["Done"].map((issue, idx) => {
+                                    const { key, project, ...issueProps } =
+                                        issue;
+                                    return (
+                                        <IssueCard
+                                            key={idx}
+                                            projectName={
+                                                project?.name ||
+                                                "Unknown Project"
+                                            }
+                                            {...issueProps}
+                                            onClick={() =>
+                                                handleShowIssueOverview(issue)
+                                            }
+                                            onDragStart={(e) =>
+                                                handleDragStart(
+                                                    e,
+                                                    issue,
+                                                    "Done"
+                                                )
+                                            }
+                                            isDragging={
+                                                draggedIssue?.key === issue.key
+                                            }
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Projects Tab */}
+            {activeTab === "projects" && (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {projects.map((project) => (
+                            <ProjectCard
+                                key={project._id}
+                                project={project}
+                                onClick={() => navigate(`/projects/${project._id}`)}
+                            />
+                        ))}
+                    </div>
+                    {projects.length === 0 && (
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
+                            <p className="text-slate-500 dark:text-slate-400">
+                                No projects found
+                            </p>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Other Views */}
+            {activeTab !== "kanban" && activeTab !== "projects" && (
+                <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-8 text-center">
+                    <p className="text-slate-500 dark:text-slate-400">
+                        {tabs.find((t) => t.id === activeTab)?.label} view
+                        coming soon
+                    </p>
+                </div>
+            )}
+
+            {/* Issue Overview Modal */}
+            <IssueOverview
+                isOpen={isIssueOverviewOpen}
+                issue={issueForOverview}
+                onClose={() => setIsIssueOverviewOpen(false)}
+            />
+
+            {/* Edit Issue Modal */}
+            <EditIssue
+                isOpen={isEditIssueModalOpen}
+                onClose={() => setIsEditIssueModalOpen(false)}
+                issueData={issueToEdit} // Pass the issue data
+                onUpdateIssue={handleUpdateIssue} // Pass the update handler from the hook
+            />
         </div>
       </div>
 

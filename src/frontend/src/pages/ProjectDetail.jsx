@@ -337,6 +337,7 @@ function ProjectDetail() {
       setIsAddMemberModalOpen(false);
       setSelectedMembers([]);
       setSearchQuery("");
+      showToast.success("Add new member successfully!");
     } catch (error) {
       console.error("Failed to add members:", error);
       showToast.error("Failed to add members");
@@ -426,11 +427,10 @@ function ProjectDetail() {
     fetchSprints();
   };
 
-  // Các hàm này bạn đã có, hãy kiểm tra lại xem có khớp không:
   const handleDragStart = (e, issue, column) => {
-    setDraggedIssue(issue);
-    setDraggedFromColumn(column);
-    e.dataTransfer.effectAllowed = "move";
+      setDraggedIssue(issue);
+      setDraggedFromColumn(column);
+      e.dataTransfer.effectAllowed = "move";
   };
 
   const handleDragOver = (e) => {
@@ -476,13 +476,14 @@ function ProjectDetail() {
   };
 
   const handleDragEnd = (e) => {
-    e.target.style.opacity = "1"; // Trả lại độ đậm nhạt
-    setDraggedIssue(null);
-    setDraggedFromColumn(null);
+      e.target.style.opacity = '1';
+      setDraggedIssue(null);
+      setDraggedFromColumn(null);
   };
 
   const getIssuesByStatus = (status) => {
-    return filteredAndSortedTasks.filter((issue) => issue.status === status);
+    return filteredAndSortedTasks.filter((issue) => issue.status === status && 
+      (!issue.sprint || issue.sprint.status === "active"));
   };
 
   const handleOpenCreateModal = (status) => {
@@ -667,7 +668,7 @@ function ProjectDetail() {
                       : "text-slate-400 dark:text-slate-500 italic"
                   }`}
                 >
-                  Ongoing
+                  {project.progress < 100 ? "Ongoing" : "Completed"}
                 </p>
               </div>
             </div>
@@ -926,7 +927,7 @@ function ProjectDetail() {
 
             {/* Kanban Board */}
             <div className="overflow-x-auto">
-              <div className="grid grid-cols-4 gap-4 min-w-max pb-4">
+              <div className="grid grid-cols-4 gap-4 min-w-max pb-4 auto-rows-fr">
                 {["To Do", "In Progress", "Review", "Done"].map((status) => {
                   const columnStatus =
                     status === "To Do"
@@ -951,7 +952,7 @@ function ProjectDetail() {
                   return (
                     <div
                       key={status}
-                      className="w-80 flex flex-col gap-3"
+                      className="w-80 flex flex-col"
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, status)}
                     >
@@ -966,7 +967,7 @@ function ProjectDetail() {
                       <div
                         className={`${getStatusBgColor(
                           status
-                        )} rounded-lg p-3 min-h-[200px] space-y-2`}
+                        )} rounded-lg p-3 flex-1 min-h-[200px] flex flex-col gap-2`}
                       >
                         {statusIssues.map((issue) => {
                           const daysLeft = calculateDaysLeft(issue.due_date);
@@ -1066,7 +1067,7 @@ function ProjectDetail() {
                         })}
                         <button
                           onClick={() => handleOpenCreateModal(columnStatus)}
-                          className="w-full py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition"
+                          className="w-full py-2 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 text-sm font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition mt-auto"
                         >
                           <Plus size={16} className="mx-auto" />
                         </button>
@@ -1092,6 +1093,7 @@ function ProjectDetail() {
             onIssueClick={handleIssueClick}
             formatDate={formatDate}
             calculateDaysLeft={calculateDaysLeft}
+            isManager={isManager}
           />
         )}
 
@@ -1303,6 +1305,7 @@ function ProjectDetail() {
         column={createIssueStatus}
         members={project?.members || []}
         sprints={sprintsData}
+        onSprintsUpdate={fetchSprints}
       />
 
       {/* ADD MEMBER MODAL */}
